@@ -122,7 +122,7 @@ export const loginSchema = z.object({
 
 export const inviteSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
-  role: z.enum(['field_officer', 'team_lead', 'admin']),
+  role: z.enum(['field_officer', 'editor', 'admin']),
   full_name: z.string().min(1, 'Full name is required'),
 });
 

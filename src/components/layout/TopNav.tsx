@@ -10,7 +10,7 @@ import { getInitials } from '@/lib/utils';
 
 export function TopNav() {
   const { user } = useAuthStore();
-  const { toggleSidebar, sidebarCollapsed } = useUIStore();
+  const { toggleSidebar } = useUIStore();
 
   return (
     <header
@@ -22,8 +22,6 @@ export function TopNav() {
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 1.5rem',
-        marginLeft: sidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
-        transition: 'margin-left var(--transition-slow)',
         position: 'sticky',
         top: 0,
         zIndex: 30,

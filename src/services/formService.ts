@@ -5,15 +5,13 @@
  * Currently uses demoData; swap with real Supabase queries when backend is ready.
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase, USE_DEMO } from '@/lib/supabase';
 import {
   demoForms, demoProjects, demoResponses, demoFormVersions,
 } from '@/services/demoData';
 import type {
   Form, Project, Response, FormVersion, FormStatus,
 } from '@/types';
-
-const USE_DEMO = !import.meta.env.VITE_SUPABASE_URL;
 
 // ---- Projects ----
 
@@ -66,8 +64,8 @@ export async function fetchForms(orgId: string, projectId?: string): Promise<For
 
   let query = supabase
     .from('forms')
-    .select('*')
-    .eq('org_id', orgId)
+    .select('*, projects!inner(org_id)')
+    .eq('projects.org_id', orgId)
     .order('updated_at', { ascending: false });
 
   if (projectId) {
@@ -76,7 +74,8 @@ export async function fetchForms(orgId: string, projectId?: string): Promise<For
 
   const { data, error } = await query;
   if (error) throw error;
-  return data as Form[];
+  // Strip the joined projects data from the response
+  return (data || []).map(({ projects: _projects, ...form }) => form) as Form[];
 }
 
 export async function fetchFormById(formId: string): Promise<Form | null> {
