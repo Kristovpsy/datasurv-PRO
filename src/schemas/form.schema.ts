@@ -140,7 +140,7 @@ export const registerSchema = z
       .regex(/[0-9]/, 'Password must contain at least one number'),
     confirm_password: z.string(),
     role: z.enum(['admin', 'editor', 'field_officer'], {
-      required_error: 'Please select a role',
+      message: 'Please select a role',
     }),
     admin_key: z.string().optional(),
   })
