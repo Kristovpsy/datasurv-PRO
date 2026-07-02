@@ -1,23 +1,17 @@
 /**
  * Login Page
  * --------------------------
- * Email + password authentication with demo account quick-login buttons.
- *
- * Demo Accounts:
- *   🟣 Admin       — admin@datasurv.io   / Admin@2025!
- *   🔵 Data Editor — editor@datasurv.io  / Editor@2025!
- *   🟢 Field Officer — officer@datasurv.io / Field@2025!
+ * Email + password sign-in.
+ * New users should use the Register page at /auth/register.
  */
 
 import { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Zap, ArrowRight, Shield, Edit3, MapPin } from 'lucide-react';
+import { Eye, EyeOff, Zap, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/stores';
-import { DEMO_ACCOUNTS } from '@/stores/authStore';
 import { loginSchema, type LoginFormData } from '@/schemas/form.schema';
-import { USE_DEMO } from '@/lib/supabase';
 
 export function LoginPage() {
   const { login, isAuthenticated, isLoading, error, clearError } = useAuthStore();
@@ -27,7 +21,6 @@ export function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -44,40 +37,6 @@ export function LoginPage() {
       navigate('/app/dashboard');
     }
   };
-
-  const handleDemoLogin = async (email: string, password: string) => {
-    clearError();
-    setValue('email', email);
-    setValue('password', password);
-    const success = await login(email, password);
-    if (success) {
-      navigate('/app/dashboard');
-    }
-  };
-
-  const demoRoleConfig = [
-    {
-      account: DEMO_ACCOUNTS.find(a => a.role === 'admin')!,
-      icon: <Shield size={18} />,
-      color: '#6366f1',
-      gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-      description: 'View analytics & reports (read-only)',
-    },
-    {
-      account: DEMO_ACCOUNTS.find(a => a.role === 'editor')!,
-      icon: <Edit3 size={18} />,
-      color: '#10b981',
-      gradient: 'linear-gradient(135deg, #10b981, #059669)',
-      description: 'Review, edit & approve submissions',
-    },
-    {
-      account: DEMO_ACCOUNTS.find(a => a.role === 'field_officer')!,
-      icon: <MapPin size={18} />,
-      color: '#f59e0b',
-      gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
-      description: 'Collect & submit field data',
-    },
-  ];
 
   return (
     <div
@@ -314,81 +273,25 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Demo Quick Login */}
-          {USE_DEMO && (
-            <div style={{ marginTop: '2rem' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem',
-              }}>
-                <div style={{ flex: 1, height: 1, background: 'var(--color-surface-200)' }} />
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-surface-400)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Demo Accounts
-                </span>
-                <div style={{ flex: 1, height: 1, background: 'var(--color-surface-200)' }} />
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {demoRoleConfig.map(({ account, icon, gradient, description }) => (
-                  <button
-                    key={account.role}
-                    type="button"
-                    onClick={() => handleDemoLogin(account.email, account.password)}
-                    disabled={isLoading}
-                    id={`demo-login-${account.role}`}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.75rem 1rem',
-                      borderRadius: 'var(--radius-lg)',
-                      border: '1px solid var(--color-surface-200)',
-                      background: 'var(--color-surface-0)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-primary-300)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(99,102,241,0.1)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--color-surface-200)';
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                      background: gradient, display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', color: 'white', flexShrink: 0,
-                    }}>
-                      {icon}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-surface-800)' }}>
-                        {account.full_name}
-                        <span style={{
-                          marginLeft: '0.5rem', fontSize: '0.6875rem', fontWeight: 500,
-                          padding: '0.125rem 0.5rem', borderRadius: '9999px',
-                          background: `${gradient.includes('6366f1') ? '#6366f115' : gradient.includes('10b981') ? '#10b98115' : '#f59e0b15'}`,
-                          color: gradient.includes('6366f1') ? '#6366f1' : gradient.includes('10b981') ? '#10b981' : '#f59e0b',
-                        }}>
-                          {account.role === 'admin' ? 'Admin' : account.role === 'editor' ? 'Data Editor' : 'Field Officer'}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.6875rem', color: 'var(--color-surface-400)', marginTop: '0.125rem' }}>
-                        {description}
-                      </div>
-                    </div>
-                    <ArrowRight size={14} style={{ color: 'var(--color-surface-300)', flexShrink: 0 }} />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
+          {/* Register link */}
+          <p style={{
+            marginTop: '1.75rem',
+            textAlign: 'center',
+            fontSize: '0.875rem',
+            color: 'var(--color-surface-500)',
+          }}>
+            Don't have an account?{' '}
+            <Link
+              to="/auth/register"
+              style={{
+                color: 'var(--color-primary-600)',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Create one
+            </Link>
+          </p>
         </div>
       </div>
     </div>

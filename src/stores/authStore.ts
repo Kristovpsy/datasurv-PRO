@@ -9,85 +9,19 @@
  *   Level 2 — Editor (review, edit, approve)
  *   Level 3 — Admin (read-only analytics & reports, can delete responses)
  *   Hidden  — Superadmin (system-level)
+ *
+ * Registration:
+ *   - Admin: requires hardcoded secret passphrase (enforced on the form)
+ *   - Editor / Field Officer: open self-registration
  */
 
 import { create } from 'zustand';
-import { supabase, USE_DEMO } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type { AuthUser, Profile, Organisation, UserRoleRecord, UserRole } from '@/types';
 import { hasMinRole } from '@/lib/utils';
+import { registerWithEmail } from '@/services/authService';
 
-// ---- Demo Accounts ----
-interface DemoAccount {
-  id: string;
-  email: string;
-  password: string;
-  full_name: string;
-  role: UserRole;
-  avatar_color: string;
-}
-
-export const DEMO_ACCOUNTS: DemoAccount[] = [
-  {
-    id: 'demo-admin-001',
-    email: 'admin@datasurv.io',
-    password: 'Admin@2025!',
-    full_name: 'Chris Admin',
-    role: 'admin',
-    avatar_color: '#6366f1',
-  },
-  {
-    id: 'demo-editor-001',
-    email: 'editor@datasurv.io',
-    password: 'Editor@2025!',
-    full_name: 'Sarah Editor',
-    role: 'editor',
-    avatar_color: '#10b981',
-  },
-  {
-    id: 'demo-officer-001',
-    email: 'officer@datasurv.io',
-    password: 'Field@2025!',
-    full_name: 'James Officer',
-    role: 'field_officer',
-    avatar_color: '#f59e0b',
-  },
-];
-
-const DEMO_ORG: Organisation = {
-  id: 'demo-org-001',
-  name: 'Datasurv Research Lab',
-  slug: 'datasurv-research',
-  plan: 'pro',
-  created_at: '2025-01-01T00:00:00Z',
-  settings: {},
-  is_active: true,
-};
-
-function buildDemoAuthUser(account: DemoAccount): AuthUser {
-  return {
-    id: account.id,
-    email: account.email,
-    profile: {
-      id: account.id,
-      org_id: DEMO_ORG.id,
-      full_name: account.full_name,
-      avatar_url: null,
-      phone: null,
-      is_active: true,
-      last_login: new Date().toISOString(),
-      created_at: '2025-01-01T00:00:00Z',
-    },
-    role: {
-      id: `role-${account.id}`,
-      user_id: account.id,
-      org_id: DEMO_ORG.id,
-      role: account.role,
-      assigned_by: null,
-      assigned_at: '2025-01-01T00:00:00Z',
-    },
-    organisation: DEMO_ORG,
-  };
-}
+// ---- Role State Helpers ----
 
 interface AuthState {
   user: AuthUser | null;
@@ -106,6 +40,7 @@ interface AuthState {
 
   // Actions
   login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string, fullName: string, role: UserRole) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   initAuth: () => Promise<void>;
   setLoading: (loading: boolean) => void;
@@ -200,12 +135,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   initAuth: async () => {
     set({ isLoading: true });
 
-    if (USE_DEMO) {
-      // In demo mode, no session to restore — go straight to login
-      set({ user: null, isAuthenticated: false, isLoading: false, ...computeRoleState(null) });
-      return;
-    }
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -250,25 +179,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     authListenerUnsubscribe = () => subscription.unsubscribe();
   },
 
+  // ---- Register ----
+  register: async (email, password, fullName, role) => {
+    set({ isLoading: true, error: null });
+    try {
+      await registerWithEmail(email, password, fullName, role);
+      set({ isLoading: false });
+      return {
+        success: true,
+        message: 'Account created! Please check your email to confirm, then sign in.',
+      };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
+      set({ isLoading: false, error: message });
+      return { success: false, message };
+    }
+  },
+
   // ---- Login (returns true on success, false on failure) ----
   login: async (email: string, password: string): Promise<boolean> => {
     set({ isLoading: true, error: null });
 
-    // Demo mode: match against demo accounts
-    if (USE_DEMO) {
-      const account = DEMO_ACCOUNTS.find(
-        (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
-      );
-      if (!account) {
-        set({ isLoading: false, error: 'Invalid email or password. Use one of the demo account credentials.' });
-        return false;
-      }
-      const authUser = buildDemoAuthUser(account);
-      set({ user: authUser, isAuthenticated: true, isLoading: false, error: null, ...computeRoleState(authUser) });
-      return true;
-    }
-
-    // Production: Supabase Auth
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -299,12 +230,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // ---- Logout ----
   logout: async () => {
-    if (!USE_DEMO) {
-      try {
-        await supabase.auth.signOut();
-      } catch (err) {
-        console.error('Sign out error:', err);
-      }
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Sign out error:', err);
     }
     set({ user: null, isAuthenticated: false, error: null, ...computeRoleState(null) });
   },
