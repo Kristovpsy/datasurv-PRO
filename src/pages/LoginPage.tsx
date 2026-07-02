@@ -17,6 +17,7 @@ import { Eye, EyeOff, Zap, ArrowRight, Shield, Edit3, MapPin } from 'lucide-reac
 import { useAuthStore } from '@/stores';
 import { DEMO_ACCOUNTS } from '@/stores/authStore';
 import { loginSchema, type LoginFormData } from '@/schemas/form.schema';
+import { USE_DEMO } from '@/lib/supabase';
 
 export function LoginPage() {
   const { login, isAuthenticated, isLoading, error, clearError } = useAuthStore();
@@ -314,77 +315,79 @@ export function LoginPage() {
           </form>
 
           {/* Demo Quick Login */}
-          <div style={{ marginTop: '2rem' }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem',
-            }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--color-surface-200)' }} />
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-surface-400)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Demo Accounts
-              </span>
-              <div style={{ flex: 1, height: 1, background: 'var(--color-surface-200)' }} />
-            </div>
+          {USE_DEMO && (
+            <div style={{ marginTop: '2rem' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem',
+              }}>
+                <div style={{ flex: 1, height: 1, background: 'var(--color-surface-200)' }} />
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-surface-400)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Demo Accounts
+                </span>
+                <div style={{ flex: 1, height: 1, background: 'var(--color-surface-200)' }} />
+              </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {demoRoleConfig.map(({ account, icon, gradient, description }) => (
-                <button
-                  key={account.role}
-                  type="button"
-                  onClick={() => handleDemoLogin(account.email, account.password)}
-                  disabled={isLoading}
-                  id={`demo-login-${account.role}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid var(--color-surface-200)',
-                    background: 'var(--color-surface-0)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left',
-                    width: '100%',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-primary-300)';
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(99,102,241,0.1)';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-surface-200)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                    background: gradient, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', color: 'white', flexShrink: 0,
-                  }}>
-                    {icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-surface-800)' }}>
-                      {account.full_name}
-                      <span style={{
-                        marginLeft: '0.5rem', fontSize: '0.6875rem', fontWeight: 500,
-                        padding: '0.125rem 0.5rem', borderRadius: '9999px',
-                        background: `${gradient.includes('6366f1') ? '#6366f115' : gradient.includes('10b981') ? '#10b98115' : '#f59e0b15'}`,
-                        color: gradient.includes('6366f1') ? '#6366f1' : gradient.includes('10b981') ? '#10b981' : '#f59e0b',
-                      }}>
-                        {account.role === 'admin' ? 'Admin' : account.role === 'editor' ? 'Data Editor' : 'Field Officer'}
-                      </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {demoRoleConfig.map(({ account, icon, gradient, description }) => (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => handleDemoLogin(account.email, account.password)}
+                    disabled={isLoading}
+                    id={`demo-login-${account.role}`}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.75rem 1rem',
+                      borderRadius: 'var(--radius-lg)',
+                      border: '1px solid var(--color-surface-200)',
+                      background: 'var(--color-surface-0)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'left',
+                      width: '100%',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--color-primary-300)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(99,102,241,0.1)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--color-surface-200)';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                      background: gradient, display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', color: 'white', flexShrink: 0,
+                    }}>
+                      {icon}
                     </div>
-                    <div style={{ fontSize: '0.6875rem', color: 'var(--color-surface-400)', marginTop: '0.125rem' }}>
-                      {description}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-surface-800)' }}>
+                        {account.full_name}
+                        <span style={{
+                          marginLeft: '0.5rem', fontSize: '0.6875rem', fontWeight: 500,
+                          padding: '0.125rem 0.5rem', borderRadius: '9999px',
+                          background: `${gradient.includes('6366f1') ? '#6366f115' : gradient.includes('10b981') ? '#10b98115' : '#f59e0b15'}`,
+                          color: gradient.includes('6366f1') ? '#6366f1' : gradient.includes('10b981') ? '#10b981' : '#f59e0b',
+                        }}>
+                          {account.role === 'admin' ? 'Admin' : account.role === 'editor' ? 'Data Editor' : 'Field Officer'}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--color-surface-400)', marginTop: '0.125rem' }}>
+                        {description}
+                      </div>
                     </div>
-                  </div>
-                  <ArrowRight size={14} style={{ color: 'var(--color-surface-300)', flexShrink: 0 }} />
-                </button>
-              ))}
+                    <ArrowRight size={14} style={{ color: 'var(--color-surface-300)', flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
