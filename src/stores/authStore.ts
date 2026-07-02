@@ -12,11 +12,9 @@
  */
 
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
+import { supabase, USE_DEMO } from '@/lib/supabase';
 import type { AuthUser, Profile, Organisation, UserRoleRecord, UserRole } from '@/types';
 import { hasMinRole } from '@/lib/utils';
-
-const USE_DEMO = !import.meta.env.VITE_SUPABASE_URL;
 
 // ---- Demo Accounts ----
 interface DemoAccount {
@@ -107,7 +105,7 @@ interface AuthState {
   isFieldOfficer: boolean;
 
   // Actions
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   initAuth: () => Promise<void>;
   setLoading: (loading: boolean) => void;
@@ -188,6 +186,9 @@ async function buildAuthUser(supabaseUserId: string, email: string): Promise<Aut
   };
 }
 
+// Track auth listener subscription for cleanup
+let authListenerUnsubscribe: (() => void) | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
@@ -222,8 +223,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: null, isAuthenticated: false, isLoading: false, ...computeRoleState(null) });
     }
 
+    // Clean up any previous listener before setting up a new one
+    if (authListenerUnsubscribe) {
+      authListenerUnsubscribe();
+      authListenerUnsubscribe = null;
+    }
+
     // Listen for auth state changes (e.g. token refresh, sign-out from another tab)
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         set({ user: null, isAuthenticated: false, ...computeRoleState(null) });
         return;
@@ -239,10 +246,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
       }
     });
+
+    authListenerUnsubscribe = () => subscription.unsubscribe();
   },
 
-  // ---- Login ----
-  login: async (email: string, password: string) => {
+  // ---- Login (returns true on success, false on failure) ----
+  login: async (email: string, password: string): Promise<boolean> => {
     set({ isLoading: true, error: null });
 
     // Demo mode: match against demo accounts
@@ -252,39 +261,50 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       );
       if (!account) {
         set({ isLoading: false, error: 'Invalid email or password. Use one of the demo account credentials.' });
-        return;
+        return false;
       }
       const authUser = buildDemoAuthUser(account);
       set({ user: authUser, isAuthenticated: true, isLoading: false, error: null, ...computeRoleState(authUser) });
-      return;
+      return true;
     }
 
     // Production: Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      set({ isLoading: false, error: error.message });
-      return;
+      if (error) {
+        set({ isLoading: false, error: error.message });
+        return false;
+      }
+
+      if (!data.user) {
+        set({ isLoading: false, error: 'Login failed. Please try again.' });
+        return false;
+      }
+
+      const authUser = await buildAuthUser(data.user.id, data.user.email || email);
+      if (!authUser) {
+        set({ isLoading: false, error: 'Your account profile could not be loaded. Contact your administrator.' });
+        return false;
+      }
+
+      set({ user: authUser, isAuthenticated: true, isLoading: false, error: null, ...computeRoleState(authUser) });
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.';
+      set({ isLoading: false, error: message });
+      return false;
     }
-
-    if (!data.user) {
-      set({ isLoading: false, error: 'Login failed. Please try again.' });
-      return;
-    }
-
-    const authUser = await buildAuthUser(data.user.id, data.user.email || email);
-    if (!authUser) {
-      set({ isLoading: false, error: 'Your account profile could not be loaded. Contact your administrator.' });
-      return;
-    }
-
-    set({ user: authUser, isAuthenticated: true, isLoading: false, error: null, ...computeRoleState(authUser) });
   },
 
   // ---- Logout ----
   logout: async () => {
     if (!USE_DEMO) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Sign out error:', err);
+      }
     }
     set({ user: null, isAuthenticated: false, error: null, ...computeRoleState(null) });
   },

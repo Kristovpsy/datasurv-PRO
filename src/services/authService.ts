@@ -5,9 +5,7 @@
  * Demo mode uses localStorage mock accounts.
  */
 
-import { supabase } from '@/lib/supabase';
-
-const USE_DEMO = !import.meta.env.VITE_SUPABASE_URL;
+import { supabase, USE_DEMO } from '@/lib/supabase';
 
 // ---- Auth Methods ----
 

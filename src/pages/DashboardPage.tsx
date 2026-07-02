@@ -286,6 +286,7 @@ function AdminDashboard() {
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const userRole = user?.role?.role || 'field_officer';
 
 
@@ -303,7 +304,7 @@ export function DashboardPage() {
           </p>
         </div>
         {userRole === 'editor' && (
-          <button className="btn btn-primary" onClick={() => window.location.href = '/app/forms/new/builder'} id="create-form-button">
+          <button className="btn btn-primary" onClick={() => navigate('/app/forms/new/builder')} id="create-form-button">
             <Plus size={18} /> Create Form
           </button>
         )}

@@ -38,9 +38,8 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     clearError();
-    await login(data.email, data.password);
-    // If no error after login, navigate to dashboard
-    if (!useAuthStore.getState().error) {
+    const success = await login(data.email, data.password);
+    if (success) {
       navigate('/app/dashboard');
     }
   };
@@ -49,8 +48,8 @@ export function LoginPage() {
     clearError();
     setValue('email', email);
     setValue('password', password);
-    await login(email, password);
-    if (!useAuthStore.getState().error) {
+    const success = await login(email, password);
+    if (success) {
       navigate('/app/dashboard');
     }
   };
