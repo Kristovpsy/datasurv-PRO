@@ -126,8 +126,44 @@ export const inviteSchema = z.object({
   full_name: z.string().min(1, 'Full name is required'),
 });
 
+/** The hardcoded passphrase required to self-register as Admin */
+export const ADMIN_REGISTER_KEY = 'ADMINONLY@2025';
+
+export const registerSchema = z
+  .object({
+    full_name: z.string().min(2, 'Full name must be at least 2 characters'),
+    email: z.string().email('Please enter a valid email address'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    confirm_password: z.string(),
+    role: z.enum(['admin', 'editor', 'field_officer'], {
+      message: 'Please select a role',
+    }),
+    admin_key: z.string().optional(),
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: 'Passwords do not match',
+    path: ['confirm_password'],
+  })
+  .refine(
+    (data) => {
+      if (data.role === 'admin') {
+        return data.admin_key === ADMIN_REGISTER_KEY;
+      }
+      return true;
+    },
+    {
+      message: 'Invalid admin secret key',
+      path: ['admin_key'],
+    }
+  );
+
 // ---- Inferred Types ----
 export type LoginFormData = z.infer<typeof loginSchema>;
+export type RegisterFormData = z.infer<typeof registerSchema>;
 export type InviteFormData = z.infer<typeof inviteSchema>;
 export type FormFieldData = z.infer<typeof formFieldSchema>;
 export type FormSettingsData = z.infer<typeof formSettingsSchema>;

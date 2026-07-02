@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores';
 import {
   LandingPage,
   LoginPage,
+  RegisterPage,
   DashboardPage,
   ProjectListPage,
   FormListPage,
@@ -150,6 +151,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth/login" element={<LoginPage />} />
+            <Route path="/auth/register" element={<RegisterPage />} />
 
             {/* Public Form Renderer — no auth required */}
             <Route path="/r/:publicId" element={<RespondentFormPage />} />
